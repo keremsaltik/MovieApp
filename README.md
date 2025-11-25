@@ -1,4 +1,4 @@
-# MovieApp - My iOS Project
+# MovieApp
 
 ![MovieApp Demo GIF]([Link-to-your-GIF-or-Screenshot])
 
