@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		4A26988E2EB5E1C700BE84F1 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 4A26988D2EB5E1C700BE84F1 /* KeychainAccess */; };
+		4AC2B8172ED5850E0063F1B8 /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 4AC2B8162ED5850E0063F1B8 /* SDWebImageSwiftUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +70,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4AC2B8172ED5850E0063F1B8 /* SDWebImageSwiftUI in Frameworks */,
 				4A26988E2EB5E1C700BE84F1 /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -131,6 +133,7 @@
 			name = MovieApp;
 			packageProductDependencies = (
 				4A26988D2EB5E1C700BE84F1 /* KeychainAccess */,
+				4AC2B8162ED5850E0063F1B8 /* SDWebImageSwiftUI */,
 			);
 			productName = MovieApp;
 			productReference = 4A9985442E9CD82D000D629B /* MovieApp.app */;
@@ -216,6 +219,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				4A2698422EB5E14600BE84F1 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				4AC2B7AC2ED583C40063F1B8 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4A9985452E9CD82D000D629B /* Products */;
@@ -417,6 +421,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7NURVND43M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MovieApp/Info.plist;
@@ -449,6 +454,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7NURVND43M;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MovieApp/Info.plist;
@@ -604,6 +610,14 @@
 				kind = branch;
 			};
 		};
+		4AC2B7AC2ED583C40063F1B8 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImageSwiftUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.4;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -611,6 +625,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4A2698422EB5E14600BE84F1 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
 			productName = KeychainAccess;
+		};
+		4AC2B8162ED5850E0063F1B8 /* SDWebImageSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4AC2B7AC2ED583C40063F1B8 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
+			productName = SDWebImageSwiftUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

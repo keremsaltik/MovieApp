@@ -13,99 +13,100 @@ struct MovieDetailResponse: Codable{
 
 struct MovieDetailModel: Codable, Identifiable, Hashable {
     
-    // --- MEVCUT ÖZELLİKLERİNİ GÜNCELLEYELİM ---
     let id: Int
     let title: String
-    let overview: String? // Overview bazen boş gelebilir, optional yapmak daha güvenli.
+    let overview: String?
     let posterPath: String?
-    let voteAverage: Double
-    let spokenLanguages: [SpokenLanguagesModel]
-    let popularity: Double
-    private let runtime: Int?
-    let genres: [GenreModel]?
-    let productionCountries: [ProductionCountriesModel]?
-    let productionCompanies: [ProductionCompaniesModel]?
-    
-    // --- EKSİK OLAN ÖNEMLİ ÖZELLİKLERİ EKLEYELİM ---
     let backdropPath: String?
     let releaseDate: String?
+    let voteAverage: Double
     let voteCount: Int
+    let popularity: Double
+    let adult: Bool
+    let runtime: Int?
+    let genres: [Genre]?
+    let spokenLanguages: [SpokenLanguage]?
+    let productionCompanies: [ProductionCompany]?
+    let productionCountries: [ProductionCountry]?
     
-    // --- CodingKeys ENUM'UNU GÜNCELLEYELİM ---
-    // Bu enum, Swift'teki değişken adlarınla JSON'daki anahtar adlarını eşleştirir.
+    
+    
     enum CodingKeys: String, CodingKey {
-        case id, title, popularity, runtime, overview, genres
-        case posterPath = "poster_path"
-        case voteAverage = "vote_average"
-        case spokenLanguages = "spoken_languages"
-        case productionCountries = "production_countries"
-        case productionCompanies = "production_companies"
-        
-        // Eklediğimiz yeni alanları da buraya ekliyoruz.
-        case backdropPath = "backdrop_path"
-        case releaseDate = "release_date"
-        case voteCount = "vote_count"
-    }
+            case id, title, overview, popularity, adult, runtime, genres
+            case posterPath = "poster_path"
+            case backdropPath = "backdrop_path"
+            case releaseDate = "release_date"
+            case voteAverage = "vote_average"
+            case voteCount = "vote_count"
+            case spokenLanguages = "spoken_languages"
+            case productionCompanies = "production_companies"
+            case productionCountries = "production_countries"
+        }
     
-    // --- SENİN YARDIMCI FONKSİYONLARIN (DOKUNULMAYACAK) ---
+    
     
     var posterURL: URL? {
-        // Bu kodun aynı kalıyor, harika.
         guard let posterPath = posterPath else { return nil }
         return URL(string: "https://image.tmdb.org/t/p/w500\(posterPath)")
     }
     
     var runtimeDivided: String? {
-        // Bu kodun da aynı kalıyor, harika.
-        // Sadece küçük bir iyileştirme:
-        guard let duration = runtime, duration > 0 else { return nil } // Boş string yerine nil dönmek daha iyi.
-        
-        let hour: Int = duration / 60
-        let minute: Int = duration % 60 // Double'a çevirmeye gerek yok.
-        
-        if hour > 0 && minute > 0 {
-            return "\(hour)h \(minute)m"
-        } else if hour > 0 {
-            return "\(hour)h"
-        } else if minute > 0 {
-            return "\(minute)m"
-        } else {
-            return nil
-        }
+        guard let duration = runtime, duration > 0 else { return nil }
+        let hour = duration / 60
+        let minute = duration % 60
+        return "\(hour)h \(minute)m"
     }
     
-    
-    // BU, DETAY EKRANI İÇİN ZENGİN BİR MOCK
-    /*static var mockDetail: MovieDetailModel{
-        MovieDetailModel(
-            id: 27205,
-            title: "Inception",
-            overview: "Cobb, a skilled thief who commits corporate espionage by infiltrating the subconscious of his targets is offered a chance to regain his old life as payment for a task considered to be impossible: \"inception\".",
-            posterPath: "/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg",
-            voteAverage: 8.36,
-            // Sahte 'spokenLanguages' dizisi
-            spokenLanguages: [
-                SpokenLanguagesModel(englishName: "English"),
-                SpokenLanguagesModel(englishName: "Japanese")
-            ],
-            popularity: 123.456,
-            runtime: 148, // Süreyi dakika olarak veriyoruz
-            // Sahte 'genres' dizisi
-            genres: [
-                GenreModel(id: 28, name: "Action"),
-                GenreModel(id: 878, name: "Science Fiction"),
-                GenreModel(id: 12, name: "Adventure")
-            ],
-            // Sahte 'productionCountries' dizisi
-            productionCountries: [
-                ProductionCountriesModel(iso: "US", name: "United States of America"),
-                ProductionCountriesModel(iso: "GB", name: "United Kingdom")
-            ],
-            // Sahte 'productionCompanies' dizisi
-            productionCompanies: [
-                ProductionCompaniesModel(id: 923, logoPath: "/effbA2yUrwzxp_P3a1a2GjR2L7b.png", name: "Legendary Pictures"),
-                ProductionCompaniesModel(id: 9996, logoPath: "/99Z3GGCDzMxb6eCRZFG2T8fCZ3g.png", name: "Syncopy")
-            ]
-        )
-    }*/
+    var movieURL: URL? {
+        return URL(string: "https://www.themoviedb.org/movie/\(id)")
+    }
 }
+
+struct Genre: Codable, Identifiable, Hashable {
+    let id: Int
+    let name: String
+}
+
+struct ProductionCompany: Codable, Identifiable, Hashable {
+    let id: Int
+    let logoPath: String?
+    let name: String
+    let originCountry: String
+    
+    var logoURL: URL?{
+        guard let logoPath = logoPath else { return nil}
+        
+        return URL(string: "https://image.tmdb.org/t/p/w200\(logoPath)")
+    }
+    
+    enum CodingKeys: String, CodingKey {
+            case id, name
+            case logoPath = "logo_path"
+            case originCountry = "origin_country"
+        }
+}
+
+struct ProductionCountry: Codable, Hashable, Identifiable {
+    var id = UUID()
+
+    let iso3166_1: String
+    let name: String
+    
+    enum CodingKeys: String, CodingKey {
+           case name
+           case iso3166_1 = "iso_3166_1"
+       }
+}
+
+struct SpokenLanguage: Codable, Hashable {
+    let englishName: String
+    let iso: String
+    let name: String
+    
+    enum CodingKeys: String, CodingKey {
+            case name
+            case englishName = "english_name"
+            case iso = "iso_639_1"
+        }
+}
+

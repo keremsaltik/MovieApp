@@ -16,8 +16,8 @@ struct MovieCategoryView: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack{
-                ForEach(moviesbyGenre.prefix(10)) { movie in
-                    NavigationLink(value: movie){
+                ForEach(moviesbyGenre) { movie in
+                    NavigationLink(value: Route.movie(movie)){
                         MovieCard(movie: movie, width: 208, height: 275)
                         
                     }

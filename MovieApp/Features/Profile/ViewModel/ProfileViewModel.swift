@@ -12,38 +12,43 @@ import KeychainAccess
 @MainActor
 class ProfileViewModel: ObservableObject {
     
-    @Published var favoriteMovies: [Result] = []
-    private var hasFetchedData = false
+    @Published var favoriteMovies: [MovieModel] = []
+    @Published var isLoading = true
     private let networkService = NetworkService()
     
-    private let keychain = Keychain(service: "com.MovieApp.bundle.id")
+    private let keychain = Keychain(service: K.Keychain.service)
+    
+    init() {
+            Task {
+                await fetchFavoriteMovies()
+            }
+        }
     
     func fetchFavoriteMovies() async{
         
-        guard !hasFetchedData else { return }
         
-        let sessionID = try? keychain.get("session_id")
-            let accountIDString = try? keychain.get("account_id")
+        
+        let sessionID = try? keychain.get(K.Keychain.sessionID)
+            let accountIDString = try? keychain.get(K.Keychain.accountID)
             
-            print("Okunan Session ID: \(sessionID ?? "BULUNAMADI")")
-            print("Okunan Account ID: \(accountIDString ?? "BULUNAMADI")")
-        guard let sessionID = try? keychain.get("session_id"),
-                let accountIDString = try? keychain.get("account_id"),
+        guard let sessionID = try? keychain.get(K.Keychain.sessionID),
+                let accountIDString = try? keychain.get(K.Keychain.accountID),
               let accountID = Int(accountIDString) else{
-            print("Oturum bilgileri alınamadı")
             return
         }
         
         
         do{
-            let fetchedFavoriteMovies = try await networkService.getFavoriteMoviesbyAccount(accountId: accountID, sessionID: sessionID)
+            let fetchedFavoriteMovies = try await networkService.getWatchListMoviesbyAccount(accountId: accountID, sessionID: sessionID)
             
             self.favoriteMovies = fetchedFavoriteMovies.results
-            
-            print("Favori filmler başarıyla çekildi: \(favoriteMovies.count)")
+           
         }catch{
+            #if DEBUG
             print("Hata oluştu \(error)")
+            #endif
         }
+        self.isLoading = false
     }
     
 }

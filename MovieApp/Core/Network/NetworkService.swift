@@ -17,6 +17,18 @@ struct DeleteSessionBody: Codable{
     let session_id: String
 }
 
+struct AddMovieToWatchListBody: Codable{
+    let media_type: String
+    let media_id: Int
+    let watchlist: Bool
+}
+
+
+struct AccountState: Codable{
+    let id: Int
+    let favorite: Bool
+    let watchlist: Bool
+}
 
 class NetworkService {
     
@@ -25,14 +37,24 @@ class NetworkService {
     // Singleton
     //static let shared = NetworkService()
     
+    private let session: URLSession
+    
     // Constants
-    private let apiKey = "YOUR_TMDB_API_KEY_HERE"
-    private let baseURL = "https://api.themoviedb.org/3"
+    private let apiKey = K.API.apiKey
+    private let baseURL = K.API.baseURL
     
     // Private Initializer
     //private init() {}
     
-    init() {}
+    init() {
+        
+        let configuration = URLSessionConfiguration.default
+        
+        
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        
+        self.session = URLSession(configuration: configuration)
+    }
     
     // MARK: - Functions
     //    func getAMovie(){
@@ -41,69 +63,68 @@ class NetworkService {
     //        URLRequest(url: url)
     //    }
     
-    func getPopularMovies() async throws -> [MovieModel] {
+    
+    
+    // MARK: - DON'T REPEAT YORUSELF
+    private func performRequsest<T: Decodable>(url: URL) async throws -> T {
+        let (data, response) = try await session.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw APIError.requestFailed(description: "Invalid server response. Status code: \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+        }
+        
+        do{
+            let decoder = JSONDecoder()
+            return try decoder.decode(T.self, from: data)
+            
+        }catch let error as DecodingError{
+            throw APIError.decodingFailed(description: error.localizedDescription)
+        }catch{
+            throw APIError.requestFailed(description: error.localizedDescription)
+        }
+    }
+    
+    // MARK: - MOVIES
+    func getPopularMovies() async throws -> MovieResponse {
         var urlComponents = URLComponents(string: "\(baseURL)/movie/popular")
         
         urlComponents?.queryItems = [URLQueryItem(name: "api_key", value: apiKey)]
         
-        guard let url = urlComponents?.url else { throw URLError(.badURL) }
+        guard let url = urlComponents?.url else { throw APIError.invalidURL }
         
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { throw URLError(.badServerResponse) }
-        
-        let decoder = JSONDecoder()
-        let movieResponse = try decoder.decode(MovieResponse.self, from: data)
-        
-        return movieResponse.results
+        return try await performRequsest(url: url)
     }
     
     
-    func getTopRatedMovies() async throws -> [MovieModel]{
+    func getTopRatedMovies() async throws -> MovieResponse{
         var urlComponents = URLComponents(string: "\(baseURL)/movie/top_rated")
         
         urlComponents?.queryItems = [URLQueryItem(name: "api_key", value: apiKey)]
         
-        guard let url = urlComponents?.url else { throw URLError(.badURL) }
+        guard let url = urlComponents?.url else { throw APIError.invalidURL }
         
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { throw URLError(.badServerResponse) }
-        
-        print(String(data: data, encoding: .utf8) ?? "Veri String'e dönüştürülemedi")
-        
-        let decoder = JSONDecoder()
-        let movieResponse = try decoder.decode(MovieResponse.self, from: data)
-        
-        return movieResponse.results
+       return try await performRequsest(url: url)
     }
     
     
-    func getMoviewsByCategory(byGenre categoryId: Int) async throws -> [MovieModel]{
+    func getMoviewsByCategory(byGenre categoryId: Int, page: Int = 1) async throws -> MovieResponse{
         var urlComponents = URLComponents(string: "\(baseURL)/discover/movie")
         
         urlComponents?.queryItems = [
             URLQueryItem(name: "api_key", value: apiKey),
-            URLQueryItem(name: "with_genres", value: String(categoryId))
+            URLQueryItem(name: "with_genres", value: String(categoryId)),
+            URLQueryItem(name: "page", value: String(page))
         ]
         
-        guard let url = urlComponents?.url else { throw URLError(.badURL)}
+        guard let url = urlComponents?.url else { throw APIError.invalidURL}
         
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { throw URLError(.badServerResponse) }
-        
-        let decoder = JSONDecoder()
-        let movieResponse = try decoder.decode(MovieResponse.self, from: data)
-        
-        return movieResponse.results
+        return try await performRequsest(url: url)
     }
     
     
     func getMovieById(movieId id: Int) async throws -> MovieDetailModel {
         
         guard var urlComponents = URLComponents(string: "\(baseURL)/movie/\(id)") else {
-            print("❌ Adım 2 Başarısız: URLComponents oluşturulamadı.")
             throw URLError(.badURL)
         }
         
@@ -112,52 +133,27 @@ class NetworkService {
         ]
         
         guard let url = urlComponents.url else {
-            print("❌ Adım 2 Başarısız: URL oluşturulamadı.")
-            throw URLError(.badURL)
+            throw APIError.invalidURL
         }
         
-        print("➡️ Adım 2: İstek atılan URL: \(url.absoluteString)")
+        return try await performRequsest(url: url)
+    }
+    
+    
+    func searchMovies(query: String, page: Int) async throws -> MovieResponse{
+        var urlComponents = URLComponents(string: "\(baseURL)/search/movie")
         
-        let (data, response) = try await URLSession.shared.data(from: url)
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey),
+            URLQueryItem(name: "query", value: query),
+            URLQueryItem(name: "page", value: String(page))
+        ]
         
-        print("➡️ Adım 3: Sunucudan yanıt alındı.")
+        guard let url = urlComponents?.url else { throw APIError.invalidURL }
         
-        guard let httpResponse = response as? HTTPURLResponse else {
-            print("❌ Adım 4 Başarısız: Gelen yanıt bir HTTP yanıtı değil.")
-            throw URLError(.badServerResponse)
-        }
+        return try await performRequsest(url: url)
         
-        print("➡️ Adım 4: Yanıt kodu kontrol ediliyor: \(httpResponse.statusCode)")
         
-        // Başarılı değilse, nedenini loglayalım.
-        if httpResponse.statusCode != 200 {
-            print("❌ Adım 4 Başarısız: Sunucudan hatalı yanıt kodu alındı: \(httpResponse.statusCode)")
-            print("Gelen Hata Verisi: \(String(data: data, encoding: .utf8) ?? "Okunamadı")")
-            throw URLError(.badServerResponse)
-        }
-        
-        print("✅ Adım 4: Sunucudan başarılı yanıt (200 OK) alındı.")
-        
-        do {
-            let decoder = JSONDecoder()
-            // ÖNEMLİ: keyDecodingStrategy'yi SİLDİĞİNDEN EMİN OL!
-            // decoder.keyDecodingStrategy = .convertFromSnakeCase // <-- BU SATIR OLMAMALI!
-            
-            let movie = try decoder.decode(MovieDetailModel.self, from: data)
-            print("✅ Adım 5: Gelen veri başarıyla MovieDetailModel'e çözümlendi. Film: \(movie.title)")
-            return movie
-        } catch {
-            // Decode işlemi başarısız olursa, hatanın ne olduğunu ve HAM VERİYİ yazdır.
-            print("❌ Adım 5 Başarısız: DECODE HATASI. Model ile JSON uyuşmuyor.")
-            print("Gelen Ham Veri: \(String(data: data, encoding: .utf8) ?? "Veri okunamadı")")
-            print("Detaylı Hata: \(error)")
-            
-            // Hatanın daha da detaylı dökümünü almak için:
-            if let decodingError = error as? DecodingError {
-                print("Decoding Error Detayları: \(decodingError)")
-            }
-            throw error
-        }
     }
     
     // for Login
@@ -168,20 +164,23 @@ class NetworkService {
             URLQueryItem(name: "api_key", value: apiKey)
         ]
         
-        guard let url = urlComponents?.url else { throw URLError(.badURL) }
+        guard let url = urlComponents?.url else { throw APIError.invalidURL }
         
-        let (data, response) = try await URLSession.shared.data(from: url)
+        let (data, response) = try await session.data(from: url)
         
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else { throw URLError(.badServerResponse) }
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {  throw APIError.requestFailed(description: "Invalid server response. Status code: \((response as? HTTPURLResponse)?.statusCode ?? 0)") }
         
         do{
             let tokenResponse = try JSONDecoder().decode(RequestTokenResponse.self, from: data)
-            print("Alınan yoken: \(tokenResponse.request_token)")
             return tokenResponse.request_token
+        }catch let error as DecodingError {
+            throw APIError.decodingFailed(description: error.localizedDescription)
+        } catch {
+            throw APIError.requestFailed(description: error.localizedDescription)
         }
     }
     
-    // UI işlemi olacağı için ana thread'de yapılmalı o yüzden main actor dedik.
+    
     @MainActor
     func directToTMDB(with token: String) {
         
@@ -194,7 +193,6 @@ class NetworkService {
         ]
         
         guard let url = urlComponents?.url else {
-            print("Yönlendirme URL'si oluşturulamadı.")
             return
         }
         
@@ -208,7 +206,7 @@ class NetworkService {
             URLQueryItem(name: "api_key", value: apiKey)
         ]
         
-        guard let url = urlComponents?.url else { throw URLError(.badURL)}
+        guard let url = urlComponents?.url else { throw APIError.invalidURL}
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -217,99 +215,137 @@ class NetworkService {
         let body = ["request_token": approvedToken]
         request.httpBody = try JSONEncoder().encode(body)
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
+            throw APIError.requestFailed(description: "Invalid server response. Status code: \((response as? HTTPURLResponse)?.statusCode ?? 0)")
         }
-        
-        let sessionResponse = try JSONDecoder().decode(SessionResponse.self, from: data)
-        return sessionResponse.session_id
-        
+        do{
+            let sessionResponse = try JSONDecoder().decode(SessionResponse.self, from: data)
+            return sessionResponse.session_id
+        }catch let error as DecodingError {
+            throw APIError.decodingFailed(description: error.localizedDescription)
+        } catch {
+            throw APIError.requestFailed(description: error.localizedDescription)
+        }
     }
     
     // Logout
     func deleteSession(sessionId: String) async throws -> Bool{
         var urlComponents = URLComponents(string: "\(baseURL)/authentication/session")
         
-        guard let url = urlComponents?.url else { throw URLError(.badURL) }
+        guard let url = urlComponents?.url else { throw APIError.invalidURL }
         
         urlComponents?.queryItems = [
-                URLQueryItem(name: "api_key", value: apiKey)
-            ]
+            URLQueryItem(name: "api_key", value: apiKey)
+        ]
         
-       var request = URLRequest(url: url)
+        var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let body = DeleteSessionBody(session_id: sessionId)
         request.httpBody = try JSONEncoder().encode(body)
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else { throw URLError(.badServerResponse)}
-    
-        let Response = try JSONDecoder().decode(SuccessResponse.self, from: data)
-        return Response.success
+              httpResponse.statusCode == 200 else {  throw APIError.requestFailed(description: "Invalid server response. Status code: \((response as? HTTPURLResponse)?.statusCode ?? 0)")}
+        
+        do{
+            let response = try JSONDecoder().decode(SuccessResponse.self, from: data)
+            return response.success
+        }catch let error as DecodingError {
+            
+            throw APIError.decodingFailed(description: error.localizedDescription)
+        } catch {
+            throw APIError.requestFailed(description: error.localizedDescription)
+        }
+        
     }
     
+    // MARK: - ACCOUNT
     
-    // Account
+    // Account Details
     func getAccountDetails(sessionID: String) async throws -> AccountDetailResponse{
         var urlComponents = URLComponents(string: "\(baseURL)/account")
         
         urlComponents?.queryItems = [
             URLQueryItem(name: "api_key", value: apiKey),
-            URLQueryItem(name: "session_id", value: sessionID)
+            URLQueryItem(name: K.Keychain.sessionID, value: sessionID)
         ]
         
-        guard let url = urlComponents?.url else { throw URLError(.badURL)}
+        guard let url = urlComponents?.url else { throw APIError.invalidURL}
         
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else
-        { throw URLError(.badServerResponse) }
-        
-        
-        let decoder = JSONDecoder()
-        let accountDetails = try decoder.decode(AccountDetailResponse.self, from: data)
-        
-        return accountDetails
+        return try await performRequsest(url: url)
     }
     
     // Favorite Movies
-    func getFavoriteMoviesbyAccount(accountId: Int, sessionID: String) async throws -> FavoriteMoviesModel{
-        var urlComponents = URLComponents(string: "\(baseURL)/account/\(accountId)/favorite/movies")
+    func getWatchListMoviesbyAccount(accountId: Int, sessionID: String) async throws -> MovieResponse{
+        var urlComponents = URLComponents(string: "\(baseURL)/account/\(accountId)/watchlist/movies")
         
         urlComponents?.queryItems = [
             URLQueryItem(name: "api_key", value: apiKey),
             URLQueryItem(name: "language", value: "en-US"),
             URLQueryItem(name: "page", value: "1"),
-            URLQueryItem(name: "session_id", value: sessionID),
+            URLQueryItem(name: K.Keychain.sessionID, value: sessionID),
             URLQueryItem(name: "sort_by", value: "created_at.asc")
         ]
         
-        guard let url = urlComponents?.url else { throw URLError(.badURL) }
+        guard let url = urlComponents?.url else { throw APIError.invalidURL }
         
-        print("İstek atılan URL: \(url.absoluteString)")
-        
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-
-        
-        print("Gelen Ham Veri: \(String(data: data, encoding: .utf8) ?? "Veri okunamadı")")
-
-        
-        let decoder = JSONDecoder()
-        let movieResponse = try decoder.decode(FavoriteMoviesModel.self, from: data)
-        
-        return movieResponse
+        return try await performRequsest(url: url)
     }
+    
+    func addMovieToWatchlist(sessionId: String, accountId: Int, body: AddMovieToWatchListBody) async throws -> SuccessResponse {
+        
+        let urlString = "\(baseURL)/account/\(accountId)/watchlist"
+        
+        guard var urlComponents = URLComponents(string: urlString) else {
+            throw APIError.invalidURL
+        }
+        
+        urlComponents.queryItems = [
+            URLQueryItem(name: "api_key", value: K.API.apiKey),
+            URLQueryItem(name: "session_id", value: sessionId)
+        ]
+        
+        guard let url = urlComponents.url else {
+            throw APIError.invalidURL
+        }
+        
+    
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        request.httpBody = try JSONEncoder().encode(body)
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            let errorData = String(data: data, encoding: .utf8) ?? "Hata mesajı okunamadı"
+
+            throw APIError.requestFailed(description: "Server returned status code \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+        }
+        
+        return try JSONDecoder().decode(SuccessResponse.self, from: data)
+    }
+    
+    func getAccountStates(for movieID: Int, sessionID: String) async throws -> AccountState{
+        var urlComponents = URLComponents(string: "\(baseURL)/movie/\(movieID)/account_states")
+        
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "api_key", value: apiKey),
+            URLQueryItem(name: K.Keychain.sessionID, value: sessionID)
+        ]
+        
+        guard let url = urlComponents?.url else { throw APIError.invalidURL }
+        
+        return try await performRequsest(url: url)
+        
+    }
+    
     
 }

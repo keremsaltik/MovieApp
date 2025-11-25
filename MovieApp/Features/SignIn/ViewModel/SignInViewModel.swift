@@ -15,7 +15,7 @@ class SignInViewModel: ObservableObject{
     @Published var errorMessage: String?
     @Published var accountID: Int?
     
-    private let keyChain = Keychain(service: "com.MovieApp.bundle.id")
+    private let keyChain = Keychain(service: K.Keychain.service)
     
     private let networkService = NetworkService()
     
@@ -40,7 +40,7 @@ class SignInViewModel: ObservableObject{
     
     
     func handleRedirect(url: URL) async{
-        guard url.scheme == "movieapptmdb",
+        guard url.scheme == K.AppInfo.urlScheme,
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let approvedToken = components.queryItems?.first(where: { $0.name == "request_token" })?.value else{
             errorMessage = "Geçersiz yönlendirme"
@@ -51,21 +51,23 @@ class SignInViewModel: ObservableObject{
             let accountDetails = try await networkService.getAccountDetails(sessionID: finalSessionID)
             
             
-            print("Giriş başarılı! Session ID: \(finalSessionID)")
+            
             self.sessionId = finalSessionID
             
-            print("Giriş başarılı! Session ID: \(accountDetails.id)")
+            
             self.accountID = accountDetails.id
             
-            try keyChain.set(finalSessionID, key: "session_id")
-            print("Session id başarıyla kaydedildi")
+            try keyChain.set(finalSessionID, key: K.Keychain.sessionID)
             
-            try keyChain.set(String(accountDetails.id), key: "account_id")
-            print("Account id başarıyla kaydedildi")
+            
+            try keyChain.set(String(accountDetails.id), key: K.Keychain.accountID)
+            
             sessionManager.loginSuccessful(details: accountDetails)
         }catch{
+#if DEBUG
             errorMessage = "Oturum bilgileri alınamadı: \(error.localizedDescription)"
             print("❌ Hata oluştu, Keychain'e yazma işlemi başarısız olmuş olabilir: \(error)")
+#endif
         }
     }
     

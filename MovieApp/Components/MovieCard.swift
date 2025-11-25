@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-
+import SDWebImageSwiftUI
 struct MovieCard<T:DisplayableMedia>: View {
     
     let movie: T
@@ -17,7 +17,18 @@ struct MovieCard<T:DisplayableMedia>: View {
     
     var body: some View {
         
-        AsyncImage(url: movie.posterURL){ image in
+        WebImage(url: movie.posterURL)
+            .onFailure{ error in
+                print("Photo couldn't be loaded: \(error.localizedDescription)")
+            }
+            .resizable()
+            .indicator(.activity)
+            .transition(.fade(duration: 0.5))
+            .frame(width: width, height: height)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        
+        
+        /*AsyncImage(url: movie.posterURL){ image in
             switch image {
             case .success(let img):
                 img
@@ -46,7 +57,8 @@ struct MovieCard<T:DisplayableMedia>: View {
                 EmptyView()
             }
             
-        }
+        }*/
+        
         
     }
 }

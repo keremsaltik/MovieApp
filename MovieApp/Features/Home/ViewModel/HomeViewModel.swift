@@ -13,22 +13,28 @@ class HomeViewModel: ObservableObject{
     @Published  var topRatedMovies: [MovieModel] = []
     @Published  var dramaMovies: [MovieModel] = []
     @Published  var comedyMovies: [MovieModel] = []
+    @Published var searchResults: [MovieModel] = []
     private let networkService = NetworkService()
+    
+    
+    func clearSearchResults() {
+        searchResults = []
+    }
     
     func fetchTopRatedMovies() async{
         do{
             
             let fetchedMovies = (try await networkService.getTopRatedMovies())
-            //topRatedMovies = try await NetworkService.shared.getTopRatedMovies()
             
             DispatchQueue.main.async {
-                self.topRatedMovies = fetchedMovies
+                self.topRatedMovies = fetchedMovies.results
             }
             
-            print("Başarıyla popüler diziler çekildi: \(topRatedMovies.count)")
         }
         catch{
+#if DEBUG
             print("Hata oluştu \(error)")
+#endif
         }
     }
     
@@ -38,24 +44,23 @@ class HomeViewModel: ObservableObject{
             let fetcehdMovies = try? await networkService.getMoviewsByCategory(byGenre: 18)
             
             DispatchQueue.main.async {
-                self.dramaMovies = fetcehdMovies ?? []
+                self.dramaMovies = fetcehdMovies?.results ?? []
             }
-            
-            print("Başarıyla drama filmleri çekildi")
         }
     }
-    // Komedi için de ayrı bir fonksiyon yapabiliriz
     func fetchComedyMovies() async {
         do {
             
             let fetchedMovies = try? await networkService.getMoviewsByCategory(byGenre: 35)
             
             DispatchQueue.main.async {
-                self.comedyMovies = fetchedMovies ?? []
+                self.comedyMovies = fetchedMovies?.results ?? []
             }
             
-            print("Başarıyla komedi filmleri çekildi")
+            
         }
     }
+    
+    
     
 }

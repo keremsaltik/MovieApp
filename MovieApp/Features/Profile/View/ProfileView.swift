@@ -11,93 +11,96 @@ struct ProfileView: View {
     
     @EnvironmentObject private var sessionManager: SessionManager
     @StateObject private var viewModel = ProfileViewModel()
-    
+    @State private var isLoadingFavorites = true
+    @State private var hasAppeared = false 
     
     @State private var showingLogoutAlert = false
     
+    private let columns: [GridItem] = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+    
     var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading) {
-                TitleTextView(title: "Profile", titleFont: .title2)
-                    .padding(.horizontal, CGFloat.App.spacingXXSmall)
-                
-                if let details = sessionManager.accountDetails{
-                    Button {
-                        
-                    } label: {
-                        HStack{
-                            AsyncImage(url: details.avatarURL){
-                                phase in
-                                if let image = phase.image{
-                                    image
-                                        .resizable()
-                                        .frame(width: 44, height: 44)
-                                        .clipShape(Circle())
-                                }
-                                else{
-                                    Image(systemName: "person.circle.fill")
-                                        .resizable()
-                                        .frame(width: 44, height: 44)
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                            VStack{
-                                Text(details.username)
-                                    .font(.title3)
-                                Text(details.name ?? "")
-                            }
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(.gray)
-                        }
-                    }
-                    .padding(.top, CGFloat.App.spacingMedium)
-                    .padding(.horizontal, CGFloat.App.spacingXXSmall)
-                    .foregroundStyle(Color.App.primaryTextColor)
-                }
-                
-                
-                TitleTextView(title: "SavedMovies", titleFont: .title3)
-                    .padding(.top, CGFloat.App.spacingSmall)
-                    .padding(.horizontal, CGFloat.App.spacingXXSmall)
-                
-                ScrollView(.horizontal, showsIndicators: false) {
-                    
+        VStack(alignment: .leading) {
+            
+            TitleTextView(title: "Profile", titleFont: .title2)
+                .padding(.horizontal, CGFloat.App.spacingXXSmall)
+            
+            if let details = sessionManager.accountDetails{
                     HStack{
+                        AsyncImage(url: details.avatarURL){
+                            phase in
+                            if let image = phase.image{
+                                image
+                                    .resizable()
+                                    .frame(width: 44, height: 44)
+                                    .clipShape(Circle())
+                            }
+                            else{
+                                Image(systemName: "person.circle.fill")
+                                    .resizable()
+                                    .frame(width: 44, height: 44)
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                            Text(details.username)
+                                .font(.title3)
+                            
+                        
+                    }
+                
+                .padding(.top, CGFloat.App.spacingMedium)
+                .padding(.horizontal, CGFloat.App.spacingXXSmall)
+                .foregroundStyle(Color.App.primaryTextColor)
+            }
+            
+            
+            TitleTextView(title: "SavedMovies", titleFont: .title3)
+                .padding(.top, CGFloat.App.spacingSmall)
+                .padding(.horizontal, CGFloat.App.spacingXXSmall)
+            
+            
+            if isLoadingFavorites {
+                ProgressView("Loading...")
+                    .frame(maxWidth: .infinity, maxHeight: 240)
+                    .padding()
+            }else{
+                
+        
+                ScrollView(.vertical){
+                    LazyVGrid(columns: columns){
                         ForEach(viewModel.favoriteMovies){
                             movie in
-                            NavigationLink(value: movie){
+                            NavigationLink(value: Route.movie(movie)){
                                 ZStack{
                                     MovieCard(movie: movie, width: 172, height: 237)
                                 }
-                                .buttonStyle(.plain)
+                                
+                                .disabled(isLoadingFavorites)
                             }
                         }
                         .padding(.horizontal, CGFloat.App.spacingXXSmall)
                     }
-                    .frame(height: 240)
                     
                 }
-                Spacer()
-                
-                
             }
-            .background(.black)
+
             
             
-            .navigationDestination(for: Result.self, destination: { movie in
-               // MovieDetailView(detailViewModel: MovieDetailViewModel(movieId: movie.id))
-                TestView(id: movie.id)
-            })
+        }
+        .onAppear {
+            guard !hasAppeared else { return }
+            hasAppeared = true
             
-            .onAppear {
-                if viewModel.favoriteMovies.isEmpty{
-                    Task{
-                        await viewModel.fetchFavoriteMovies()
-                    }
+            Task {
+                await viewModel.fetchFavoriteMovies()
+                await MainActor.run {
+                    isLoadingFavorites = false
                 }
             }
-            
+        }
+    
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Logout", role: .destructive){
@@ -116,7 +119,10 @@ struct ProfileView: View {
             } message: {
                 Text("Oturumu sonlandırmak istediğinizden emin misiniz?")
             }
-        }
+        
+            .defaultBackground()
+            .navigationTitle("Profile")
+        
     }
     
 }
