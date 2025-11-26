@@ -9,7 +9,7 @@ import Foundation
 
 struct K{
     struct API{
-        static let apiKey = "YOUR_TMD_API_KEY"
+        static let apiKey = "YOUR_TMDB_API_KEY"
         
         static let baseURL = "https://api.themoviedb.org/3"
     }
