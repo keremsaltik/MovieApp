@@ -79,7 +79,7 @@ struct SignInView: View {
         .onOpenURL{
             url in
             Task{
-                await viewModel.handleRedirect(url: url)
+                await sessionManager.handleRedirect(url: url)
             }
         }
         

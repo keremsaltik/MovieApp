@@ -69,6 +69,11 @@ struct MovieAppApp: App {
             .task {
                 await sessionManager.checkAuthentication()
             }
+                       .onReceive(sessionManager.$isLoggedIn) { isLoggedInValue in
+                           if !isLoggedInValue && !navigationPath.isEmpty {
+                               navigationPath = NavigationPath()
+                           }
+                       }
         }
     }
 }

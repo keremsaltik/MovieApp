@@ -232,13 +232,17 @@ class NetworkService {
     
     // Logout
     func deleteSession(sessionId: String) async throws -> Bool{
-        var urlComponents = URLComponents(string: "\(baseURL)/authentication/session")
+        guard var urlComponents = URLComponents(string: "\(baseURL)/authentication/session") else {
+                throw APIError.invalidURL
+            }
         
-        guard let url = urlComponents?.url else { throw APIError.invalidURL }
-        
-        urlComponents?.queryItems = [
+        urlComponents.queryItems = [
             URLQueryItem(name: "api_key", value: apiKey)
         ]
+        
+        guard let url = urlComponents.url else { throw APIError.invalidURL }
+        
+        
         
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"

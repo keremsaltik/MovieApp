@@ -103,7 +103,7 @@ struct ProfileView: View {
     
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Logout", role: .destructive){
+                    Button("Signout", role: .destructive){
                         showingLogoutAlert = true
                     }
                 }
@@ -114,6 +114,7 @@ struct ProfileView: View {
                     Task{
                         await sessionManager.logout()
                     }
+                    
                 }
                 Button("Vazgeç", role: .cancel) { }
             } message: {
