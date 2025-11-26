@@ -34,17 +34,12 @@ class NetworkService {
     
     // MARK: - Variables
     
-    // Singleton
-    //static let shared = NetworkService()
     
     private let session: URLSession
     
     // Constants
     private let apiKey = K.API.apiKey
     private let baseURL = K.API.baseURL
-    
-    // Private Initializer
-    //private init() {}
     
     init() {
         
