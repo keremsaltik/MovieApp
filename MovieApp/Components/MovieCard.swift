@@ -19,7 +19,9 @@ struct MovieCard<T:DisplayableMedia>: View {
         
         WebImage(url: movie.posterURL)
             .onFailure{ error in
+                #if DEBUG
                 print("Photo couldn't be loaded: \(error.localizedDescription)")
+                #endif
             }
             .resizable()
             .indicator(.activity)

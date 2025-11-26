@@ -21,33 +21,28 @@ class SessionManager: ObservableObject{
     private let networkService = NetworkService()
     private let keyChain = Keychain(service: K.Keychain.service)
     
-    /*init() {
-     // Check when app started.
-     Task{
-     await checkAuthentication()
-     }    }*/
-    
     func handleRedirect(url: URL) async {
-            
-            // 1. Gelen URL'den onaylanmış token'ı al.
-            guard url.scheme == K.AppInfo.urlScheme,
-                  let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                  let approvedToken = components.queryItems?.first(where: { $0.name == "request_token" })?.value else {
-                return
-            }
-            do {
-                let finalSessionID = try await networkService.createSessionID(with: approvedToken)
-                let accountDetails = try await networkService.getAccountDetails(sessionID: finalSessionID)
-                
-                try keyChain.set(finalSessionID, key: K.Keychain.sessionID)
-                try keyChain.set(String(accountDetails.id), key: K.Keychain.accountID)
-                self.loginSuccessful(details: accountDetails)
-                
-            } catch {
-                print("❌ SessionManager: Yönlendirme işlenirken hata oluştu: \(error)")
-            }
-        }
         
+        guard url.scheme == K.AppInfo.urlScheme,
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let approvedToken = components.queryItems?.first(where: { $0.name == "request_token" })?.value else {
+            return
+        }
+        do {
+            let finalSessionID = try await networkService.createSessionID(with: approvedToken)
+            let accountDetails = try await networkService.getAccountDetails(sessionID: finalSessionID)
+            
+            try keyChain.set(finalSessionID, key: K.Keychain.sessionID)
+            try keyChain.set(String(accountDetails.id), key: K.Keychain.accountID)
+            self.loginSuccessful(details: accountDetails)
+            
+        } catch {
+#if DEBUG
+            print("❌ SessionManager: Error occurred while processing redirect: \(error)")
+#endif
+        }
+    }
+    
     func checkAuthentication() async{
         guard let sessionID =  try? keyChain.get(K.Keychain.sessionID) else {
             self.isLoggedIn = false
@@ -62,7 +57,7 @@ class SessionManager: ObservableObject{
             self.isLoggedIn = true
         }catch{
 #if DEBUG
-            print("Oturum doğrulaması başarısız: \(error.localizedDescription)")
+            print("Session verification failed: \(error.localizedDescription)")
 #endif
             await logout()
         }
@@ -78,32 +73,32 @@ class SessionManager: ObservableObject{
     func logout() async{
         
         guard let sessionID = try? keyChain.get(K.Keychain.sessionID) else {
-                    cleanLocalSession()
-                    return
+            cleanLocalSession()
+            return
+        }
+        
+        Task(priority: .background) {
+            do {
+                let success = try await networkService.deleteSession(sessionId: sessionID)
+                if success {
+#if DEBUG
+                    print("✅ The TMDB session was successfully terminated on the server.")
+#endif
                 }
-                
-                Task(priority: .background) {
-                    do {
-                        let success = try await networkService.deleteSession(sessionId: sessionID)
-                        if success {
-                            print("✅ TMDB oturumu sunucuda başarıyla sonlandırıldı.")
-                        }
-                    } catch {
-                        print("⚠️ TMDB oturumu sunucuda sonlandırılamadı: \(error.localizedDescription)")
-                    }
-                }
-                
-                // EN ÖNEMLİ KISIM:
-                // Ağ isteğinin bitmesini BEKLEMEDEN, yerel durumu ANINDA temizle.
-                cleanLocalSession()
+            } catch {
+#if DEBUG
+                print("⚠️ TMDB session could not be terminated on the server: \(error.localizedDescription)")
+#endif
+            }
+        }
+        cleanLocalSession()
     }
     
     private func cleanLocalSession() {
-           try? keyChain.remove(K.Keychain.sessionID)
-           try? keyChain.remove(K.Keychain.accountID)
-           self.isLoggedIn = false 
-           print("✅ Yerel oturum temizlendi ve navigasyon tetiklendi.")
-       }
+        try? keyChain.remove(K.Keychain.sessionID)
+        try? keyChain.remove(K.Keychain.accountID)
+        self.isLoggedIn = false
+    }
     
     /*func forceCleanKeychain() {
      do {

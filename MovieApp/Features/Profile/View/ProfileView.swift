@@ -12,7 +12,7 @@ struct ProfileView: View {
     @EnvironmentObject private var sessionManager: SessionManager
     @StateObject private var viewModel = ProfileViewModel()
     @State private var isLoadingFavorites = true
-    @State private var hasAppeared = false 
+    @State private var hasAppeared = false
     
     @State private var showingLogoutAlert = false
     
@@ -28,31 +28,35 @@ struct ProfileView: View {
                 .padding(.horizontal, CGFloat.App.spacingXXSmall)
             
             if let details = sessionManager.accountDetails{
-                    HStack{
-                        AsyncImage(url: details.avatarURL){
-                            phase in
-                            if let image = phase.image{
-                                image
-                                    .resizable()
-                                    .frame(width: 44, height: 44)
-                                    .clipShape(Circle())
-                            }
-                            else{
-                                Image(systemName: "person.circle.fill")
-                                    .resizable()
-                                    .frame(width: 44, height: 44)
-                                    .foregroundColor(.gray)
-                            }
+                HStack{
+                    AsyncImage(url: details.avatarURL){
+                        phase in
+                        if let image = phase.image{
+                            image
+                                .resizable()
+                                .frame(width: 56, height: 56)
+                                .clipShape(Circle())
                         }
-                            Text(details.username)
-                                .font(.title3)
-                            
-                        
+                        else{
+                            Image(systemName: "person.circle.fill")
+                                .resizable()
+                                .frame(width: 56, height: 56)
+                                .foregroundColor(.gray)
+                        }
                     }
-                
+                    
+                    Text(details.username)
+                        .font(.title3)
+                    
+                    Spacer()
+                    
+                }
+                .padding()
+                .background(.dark2, in: RoundedRectangle(cornerRadius: 8))
                 .padding(.top, CGFloat.App.spacingMedium)
                 .padding(.horizontal, CGFloat.App.spacingXXSmall)
                 .foregroundStyle(Color.App.primaryTextColor)
+                
             }
             
             
@@ -67,7 +71,7 @@ struct ProfileView: View {
                     .padding()
             }else{
                 
-        
+                
                 ScrollView(.vertical){
                     LazyVGrid(columns: columns){
                         ForEach(viewModel.favoriteMovies){
@@ -85,7 +89,7 @@ struct ProfileView: View {
                     
                 }
             }
-
+            
             
             
         }
@@ -100,35 +104,38 @@ struct ProfileView: View {
                 }
             }
         }
-    
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Signout", role: .destructive){
-                        showingLogoutAlert = true
-                    }
-                }
-            }
-            
-            .alert("Logout", isPresented: $showingLogoutAlert) {
-                Button("Logout", role: .destructive){
-                    Task{
-                        await sessionManager.logout()
-                    }
-                    
-                }
-                Button("Vazgeç", role: .cancel) { }
-            } message: {
-                Text("Oturumu sonlandırmak istediğinizden emin misiniz?")
-            }
         
-            .defaultBackground()
-            .navigationTitle("Profile")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingLogoutAlert = true
+                } label: {
+                    Text("Signout")
+                        .foregroundStyle(.red)
+                }
+            }
+        }
+        
+        .alert("Signout", isPresented: $showingLogoutAlert) {
+            Button("Signout", role: .destructive){
+                Task{
+                    await sessionManager.logout()
+                }
+                
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to end the session?")
+        }
+        
+        .defaultBackground()
+        .navigationTitle("Profile")
         
     }
     
 }
 
 #Preview {
-    /*ProfileView()
-     .environmentObject(SessionManager())*/
+    ProfileView()
+        .environmentObject(SessionManager())
 }
