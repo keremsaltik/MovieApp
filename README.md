@@ -1,6 +1,9 @@
 # MovieApp
 
-![MovieApp Demo GIF]([Link-to-your-GIF-or-Screenshot])
+
+https://github.com/user-attachments/assets/5e9fa9f6-bc0b-436b-9937-05378160dda1
+
+
 
 ## About This Project
 
