@@ -13,6 +13,8 @@ With this app, you can find new movies, search for any movie you like, and keep 
 
 This project was a big learning journey for me, and I'm happy to share it.
 
+Design link: https://www.figma.com/community/file/1216440976466156346/movieisme
+
 ---
 
 ## Features
